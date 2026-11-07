@@ -14,6 +14,10 @@ export default function AuthPanel({ email: sessionEmail, username: name }: { ema
     e.preventDefault();
     if (!supabase) return;
     setBusy(true); setMessage('');
+    if (mode === 'signup') {
+      const { data: free, error: rpcError } = await supabase.rpc('username_available', { name: username });
+      if (!rpcError && free === false) { setBusy(false); setMessage('Ese nombre de usuario ya está en uso. Elegí otro.'); return; }
+    }
     const r = mode === 'signup'
       ? await supabase.auth.signUp({ email, password, options: { data: { username: username.trim().toLowerCase() } } })
       : await supabase.auth.signInWithPassword({ email, password });

@@ -1,11 +1,12 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ENTRY_COLUMNS, Entry, STATUSES } from '@/lib/types';
+import { ENTRY_COLUMNS, Entry, STATUSES, STATUS_LABEL } from '@/lib/types';
 
 export default function Library({ userId, refreshKey }: { userId: string | null; refreshKey: number }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [error, setError] = useState('');
+  const [tab, setTab] = useState('Todos');
 
   const load = useCallback(async () => {
     if (!supabase || !userId) { setEntries([]); return; }
@@ -31,6 +32,8 @@ export default function Library({ userId, refreshKey }: { userId: string | null;
     return { total: entries.length, done: entries.filter(e => e.status === 'Completado').length, eps, hours: Math.round(mins / 60), best };
   }, [entries]);
 
+  const visible = tab === 'Todos' ? entries : entries.filter(e => e.status === tab);
+
   if (!userId) return <section className="librarySection" id="biblioteca"><h2>Mi biblioteca</h2><p className="empty">Iniciá sesión para ver tu biblioteca.</p></section>;
 
   return (
@@ -40,18 +43,19 @@ export default function Library({ userId, refreshKey }: { userId: string | null;
         <div><b>{stats.total}</b><span>Animes</span></div>
         <div><b>{stats.done}</b><span>Completados</span></div>
         <div><b>{stats.eps}</b><span>Episodios</span></div>
-        <div><b>{stats.hours} h</b><span>Mirando anime</span></div>
+        <div><b>{stats.hours} h</b><span>Horas (estimadas)</span></div>
       </div>
       {stats.best && <p className="muted">Mejor puntuado: {stats.best.title} ({stats.best.score}/10)</p>}
       {error && <p className="message">{error}</p>}
+      <div className="tabs">{['Todos', ...STATUSES].map(t => <button key={t} className={t === tab ? 'tab on' : 'tab'} onClick={() => setTab(t)}>{t === 'Todos' ? 'Todos' : STATUS_LABEL[t]}</button>)}</div>
       <div className="entryList">
-        {entries.map(e => (
+        {visible.map(e => (
           <div className="entry" key={e.id}>
             {e.cover_url && <img className="entryCover" src={e.cover_url} alt="" />}
             <b>{e.title}</b>
-            <select value={e.status} onChange={ev => update(e.id, { status: ev.target.value })}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select>
+            <select value={e.status} onChange={ev => update(e.id, { status: ev.target.value })}>{STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select>
             <input className="mini" type="number" min={0} max={e.episodes_total ?? undefined} value={e.episodes_watched}
-              onChange={ev => update(e.id, { episodes_watched: Math.max(0, Number(ev.target.value) || 0) })} title="Episodios vistos" />
+              onChange={ev => update(e.id, { episodes_watched: Math.min(e.episodes_total ?? Infinity, Math.max(0, Number(ev.target.value) || 0)) })} title="Episodios vistos" />
             <span className="muted">/ {e.episodes_total ?? '?'}</span>
             <select className="mini" value={e.score ?? ''} onChange={ev => update(e.id, { score: ev.target.value ? Number(ev.target.value) : null })} title="Puntaje">
               <option value="">—</option>{[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n}>{n}</option>)}
@@ -60,7 +64,7 @@ export default function Library({ userId, refreshKey }: { userId: string | null;
           </div>
         ))}
       </div>
-      {entries.length === 0 && <p className="empty">Todavía no agregaste animes. Buscá uno arriba.</p>}
+      {visible.length === 0 && <p className="empty">{entries.length === 0 ? 'Todavía no agregaste animes. Buscá uno arriba.' : 'No hay animes en esta lista.'}</p>}
     </section>
   );
 }

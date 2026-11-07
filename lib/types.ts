@@ -9,4 +9,5 @@ export type Entry = {
   status: string; score: number | null; episodes_watched: number;
 };
 export const STATUSES = ['Viendo', 'Completado', 'Pendiente', 'En pausa', 'Abandonado'];
+export const STATUS_LABEL: Record<string, string> = { Viendo: 'Viendo', Completado: 'Ya visto', Pendiente: 'Quiero ver', 'En pausa': 'En pausa', Abandonado: 'Abandonado' };
 export const ENTRY_COLUMNS = 'id, anilist_id, title, cover_url, episodes_total, duration_min, genres, status, score, episodes_watched';
