@@ -5,10 +5,15 @@ import { Poster } from './Carousel';
 
 const GENRES = [['Action', 'Acción'], ['Adventure', 'Aventura'], ['Comedy', 'Comedia'], ['Drama', 'Drama'], ['Fantasy', 'Fantasía'], ['Horror', 'Terror'], ['Mystery', 'Misterio'], ['Psychological', 'Psicológico'], ['Romance', 'Romance'], ['Sci-Fi', 'Ciencia ficción'], ['Slice of Life', 'Slice of life'], ['Sports', 'Deportes'], ['Supernatural', 'Sobrenatural']];
 
-export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }) {
+export default function Explore({ onOpen, preset = '' }: { onOpen: (a: AnimeResult) => void; preset?: string }) {
+  const init = new URLSearchParams(preset);
   const [q, setQ] = useState('');
-  const [genre, setGenre] = useState('');
-  const [sort, setSort] = useState('POPULARITY_DESC');
+  const [genre, setGenre] = useState(init.get('genre') || '');
+  const [sort, setSort] = useState(init.get('sort') || 'POPULARITY_DESC');
+  const [season, setSeason] = useState(init.get('season') || '');
+  const [year, setYear] = useState(init.get('year') || '');
+  const [format, setFormat] = useState(init.get('format') || '');
+  const [status, setStatus] = useState(init.get('status') || '');
   const [items, setItems] = useState<AnimeResult[]>([]);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
@@ -24,6 +29,10 @@ export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }
       const qs = new URLSearchParams({ sort, page: String(p) });
       if (q.trim()) qs.set('q', q.trim());
       if (genre) qs.set('genre', genre);
+      if (season) qs.set('season', season);
+      if (year) qs.set('year', year);
+      if (format) qs.set('format', format);
+      if (status) qs.set('status', status);
       const r = await fetch(`/api/anime?${qs}`);
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'No se pudo cargar.');
@@ -39,7 +48,7 @@ export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }
     } finally {
       if (my === gen.current) setLoading(false);
     }
-  }, [q, genre, sort]);
+  }, [q, genre, sort, season, year, format, status]);
 
   useEffect(() => {
     gen.current++; setItems([]); setHasNext(true); setPage(1);
@@ -70,6 +79,22 @@ export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }
           <option value="POPULARITY_DESC">Popularidad</option>
           <option value="SCORE_DESC">Puntuación</option>
           <option value="START_DATE_DESC">Más recientes</option>
+        </select>
+        <select value={year} onChange={e => setYear(e.target.value)}>
+          <option value="">Cualquier año</option>
+          {Array.from({ length: 40 }, (_, i) => String(new Date().getFullYear() + 1 - i)).map(y => <option key={y}>{y}</option>)}
+        </select>
+        <select value={season} onChange={e => setSeason(e.target.value)}>
+          <option value="">Toda temporada</option>
+          <option value="WINTER">Invierno</option><option value="SPRING">Primavera</option><option value="SUMMER">Verano</option><option value="FALL">Otoño</option>
+        </select>
+        <select value={format} onChange={e => setFormat(e.target.value)}>
+          <option value="">Todo formato</option>
+          <option value="TV">Serie</option><option value="MOVIE">Película</option><option value="OVA">OVA</option><option value="ONA">ONA</option>
+        </select>
+        <select value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">Todo estado</option>
+          <option value="RELEASING">En emisión</option><option value="FINISHED">Finalizado</option><option value="NOT_YET_RELEASED">Próximamente</option>
         </select>
       </div>
       <div className="grid">

@@ -1,20 +1,24 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AnimeResult, ENTRY_COLUMNS, Entry } from '@/lib/types';
+import { seasonInfo } from '@/lib/season';
 import Carousel from './Carousel';
 
+const S = seasonInfo();
 const SECTIONS = [
-  ['Los más populares', 'sort=POPULARITY_DESC'],
-  ['Los mejor valorados', 'sort=SCORE_DESC'],
-  ['En emisión ahora', 'sort=TRENDING_DESC&status=RELEASING'],
+  ['Tendencias ahora', 'sort=TRENDING_DESC'],
+  ['Popular esta temporada', `sort=POPULARITY_DESC&season=${S.cur}&year=${S.curY}`],
+  ['Próxima temporada', `sort=POPULARITY_DESC&season=${S.next}&year=${S.nextY}`],
+  ['Popular de todos los tiempos', 'sort=POPULARITY_DESC'],
+  ['Mejor valorados', 'sort=SCORE_DESC'],
   ['Acción y aventura', 'sort=POPULARITY_DESC&genre=Action'],
   ['Fantasía', 'sort=POPULARITY_DESC&genre=Fantasy'],
   ['Romance y drama', 'sort=POPULARITY_DESC&genre=Romance'],
 ];
 type S = { items: AnimeResult[]; loading: boolean; error: string };
 
-export default function Home({ userId, refreshKey, onOpen }: { userId: string | null; refreshKey: number; onOpen: (a: AnimeResult) => void }) {
+export default function Home({ userId, refreshKey, onOpen, onSeeAll }: { userId: string | null; refreshKey: number; onOpen: (a: AnimeResult) => void; onSeeAll: (qs: string) => void }) {
   const [data, setData] = useState<S[]>(SECTIONS.map(() => ({ items: [], loading: true, error: '' })));
   const [watching, setWatching] = useState<Entry[]>([]);
 
@@ -42,6 +46,10 @@ export default function Home({ userId, refreshKey, onOpen }: { userId: string | 
   }
 
   const hero = data[0].items.find(a => a.banner);
+  const rows = useMemo(() => {
+    const seen = new Set<number>();
+    return data.map(s => ({ ...s, items: s.items.filter(a => (seen.has(a.id) ? false : (seen.add(a.id), true))) }));
+  }, [data]);
   return (
     <div>
       {hero ? (
@@ -74,8 +82,8 @@ export default function Home({ userId, refreshKey, onOpen }: { userId: string | 
         </section>
       )}
 
-      {SECTIONS.map(([title], i) => (
-        <Carousel key={title} title={title} items={data[i].items} loading={data[i].loading} error={data[i].error} onOpen={onOpen} />
+      {SECTIONS.map(([title, qs], i) => (
+        <Carousel key={title} title={title} items={rows[i].items} loading={rows[i].loading} error={rows[i].error} onOpen={onOpen} onSeeAll={() => onSeeAll(qs)} />
       ))}
     </div>
   );

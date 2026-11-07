@@ -1,20 +1,30 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { saveEntry } from '@/lib/save';
 import { AnimeResult } from '@/lib/types';
+import { Poster } from './Carousel';
 
 const OPTIONS = [['Completado', 'Ya visto'], ['Viendo', 'Viendo'], ['Pendiente', 'Quiero ver']];
 const LABEL: Record<string, string> = { Completado: 'Ya visto', Viendo: 'Viendo', Pendiente: 'Quiero ver', 'En pausa': 'En pausa', Abandonado: 'Abandonado' };
 const STATUS_ES: Record<string, string> = { RELEASING: 'En emisión', FINISHED: 'Finalizado', NOT_YET_RELEASED: 'Próximamente', CANCELLED: 'Cancelado', HIATUS: 'En pausa' };
 
-export default function Detail({ a, userId, onClose, onChanged, onLogin }: {
-  a: AnimeResult; userId: string | null; onClose: () => void; onChanged: () => void; onLogin: () => void;
+export default function Detail({ a, userId, onClose, onChanged, onLogin, onOpen }: {
+  a: AnimeResult; userId: string | null; onClose: () => void; onChanged: () => void; onLogin: () => void; onOpen: (a: AnimeResult) => void;
 }) {
   const [cur, setCur] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [sim, setSim] = useState<AnimeResult[] | null>(null);
+  const [simErr, setSimErr] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/anime?id=${a.id}`)
+      .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(); setSim(j.results); })
+      .catch(() => { setSim([]); setSimErr(true); });
+  }, [a.id]);
 
   useEffect(() => {
     if (!supabase || !userId) return;
@@ -31,21 +41,9 @@ export default function Detail({ a, userId, onClose, onChanged, onLogin }: {
   async function confirm() {
     if (!supabase || !userId || !sel || sel === cur) return;
     setSaving(true);
-    const patch: Record<string, unknown> = { status: sel };
-    if (sel === 'Completado' && a.episodes) patch.episodes_watched = a.episodes;
-    let r;
-    if (cur) {
-      r = await supabase.from('anime_entries').update(patch).eq('user_id', userId).eq('anilist_id', a.id);
-    } else {
-      r = await supabase.from('anime_entries').insert({
-        user_id: userId, anilist_id: a.id, title: a.title, native_title: a.nativeTitle || null,
-        cover_url: a.cover || null, format: a.format, episodes_total: a.episodes, duration_min: a.duration,
-        genres: a.genres, status: sel, episodes_watched: sel === 'Completado' ? (a.episodes ?? 0) : 0,
-      });
-    }
-    if (r.error?.code === '23505') r = await supabase.from('anime_entries').update(patch).eq('user_id', userId).eq('anilist_id', a.id);
+    const e = await saveEntry(userId, a, sel, !!cur);
     setSaving(false);
-    if (r.error) { setMsg(r.error.message); return; }
+    if (e) { setMsg(e); return; }
     setCur(sel); setEditing(false); setMsg(''); onChanged();
   }
 
@@ -83,6 +81,10 @@ export default function Detail({ a, userId, onClose, onChanged, onLogin }: {
             {!userId && <p className="message">Necesitás una cuenta para guardar. <button className="link" onClick={onLogin}>Ingresar</button></p>}
             {msg && <p className="message">{msg}</p>}
           </div>
+        </div>
+        <div className="simSec">
+          <h3>Similares</h3>
+          {sim === null ? <p className="muted">Cargando…</p> : simErr ? <p className="muted">No se pudieron cargar las recomendaciones.</p> : sim.length === 0 ? <p className="muted">Sin recomendaciones disponibles.</p> : <div className="row">{sim.map(x => <Poster key={x.id} a={x} onOpen={onOpen} />)}</div>}
         </div>
       </div>
     </div>

@@ -43,3 +43,10 @@ input,select{background:var(--surface);color:var(--text);border:1px solid var(--
 .loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0,rgba(139,92,246,.18),transparent 60%),var(--bg)}
 .loginBox{width:100%;max-width:400px;text-align:center}.logo.big{font-size:36px;display:block;margin:0 auto 6px}.loginBox .authCard{text-align:left;margin:22px 0 14px}.switchMode{margin:14px 0 0;font-size:14px}
 .center{text-align:center;padding:18px 0}.sentinel{height:1px}.saved{margin:0 6px 0 0;align-self:center}
+.poster{position:relative}.pbtn{background:none;border:0;padding:0;text-align:left;width:100%;display:flex;flex-direction:column;gap:5px}
+.pbtn img,.pbtn .noimg{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;background:var(--surface);transition:transform .2s,box-shadow .2s}
+.poster:hover .pbtn img{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.qa{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(11,13,20,.85);font-size:18px;line-height:1;opacity:0;transition:opacity .15s}.poster:hover .qa,.qa.on,.qa:focus-visible{opacity:1}.qa.on{background:var(--accent2)}
+@media(hover:none){.qa{opacity:1}}
+.qmenu{position:absolute;top:44px;right:8px;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;display:flex;flex-direction:column;min-width:130px}.qmenu button{background:none;border:0;text-align:left;padding:8px 10px;border-radius:6px;font-size:13px}.qmenu button:hover,.qmenu .sel{background:var(--accent2)}.qmenu small{padding:4px 10px;color:#c4b5fd}
+.secHead{display:flex;align-items:baseline;justify-content:space-between}.seeAll{background:none;border:0;color:var(--accent);font-size:13px}.simSec{padding:0 24px 24px}.simSec h3{margin:0 0 6px}

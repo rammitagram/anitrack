@@ -7,6 +7,8 @@ import Detail from '@/components/Detail';
 import Explore from '@/components/Explore';
 import Home from '@/components/Home';
 import Library from '@/components/Library';
+import { QuickCtx } from '@/lib/ctx';
+import { saveEntry } from '@/lib/save';
 
 type View = 'home' | 'explore' | 'library' | 'account';
 const NAV: [View, string][] = [['home', 'Inicio'], ['explore', 'Explorar'], ['library', 'Mi biblioteca']];
@@ -19,6 +21,9 @@ export default function Page() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [ready, setReady] = useState(!supabase);
   const [guest, setGuest] = useState(false);
+  const [statusById, setStatusById] = useState<Record<number, string>>({});
+  const [exploreKey, setExploreKey] = useState(0);
+  const [preset, setPreset] = useState('');
 
   useEffect(() => {
     if (!supabase) return;
@@ -39,6 +44,23 @@ export default function Page() {
   const userId: string | null = session?.user?.id ?? null;
   const show = (v: View) => ({ display: view === v ? 'block' : 'none' });
 
+  useEffect(() => {
+    if (!supabase || !userId) { setStatusById({}); return; }
+    supabase.from('anime_entries').select('anilist_id, status').eq('user_id', userId)
+      .then(({ data }) => setStatusById(Object.fromEntries((data || []).map((e: any) => [e.anilist_id, e.status]))));
+  }, [userId, refreshKey]);
+
+  const ctx = {
+    userId, statusById, onLogin: () => setView('account'),
+    save: async (a: AnimeResult, status: string) => {
+      if (!userId) return 'Iniciá sesión para guardar animes.';
+      const e = await saveEntry(userId, a, status, a.id in statusById);
+      if (!e) { setStatusById(m => ({ ...m, [a.id]: status })); setRefreshKey(k => k + 1); }
+      return e;
+    },
+  };
+  function seeAll(qs: string) { setPreset(qs); setExploreKey(k => k + 1); setView('explore'); window.scrollTo(0, 0); }
+
   if (!ready) return <div className="splash">ANI<b>TRACK</b></div>;
   if (!session && !guest) return (
     <div className="loginScreen"><div className="loginBox">
@@ -50,7 +72,7 @@ export default function Page() {
   );
 
   return (
-    <>
+    <QuickCtx.Provider value={ctx}>
       <header className="top">
         <button className="logo" onClick={() => setView('home')}>ANI<b>TRACK</b></button>
         <nav className="nav">
@@ -59,13 +81,13 @@ export default function Page() {
         <button className="acct" onClick={() => setView('account')}>{userId ? (username || 'U').slice(0, 1).toUpperCase() : 'Ingresar'}</button>
       </header>
       <main className="page">
-        <div style={show('home')}><Home userId={userId} refreshKey={refreshKey} onOpen={setOpen} /></div>
-        <div style={show('explore')}><Explore onOpen={setOpen} /></div>
+        <div style={show('home')}><Home userId={userId} refreshKey={refreshKey} onOpen={setOpen} onSeeAll={seeAll} /></div>
+        <div style={show('explore')}><Explore key={exploreKey} preset={preset} onOpen={setOpen} /></div>
         {view === 'library' && <Library userId={userId} refreshKey={refreshKey} />}
         {view === 'account' && <div className="authPage"><AuthPanel email={session?.user?.email ?? null} username={username} /></div>}
       </main>
-      {open && <Detail a={open} userId={userId} onClose={() => setOpen(null)} onChanged={() => setRefreshKey(k => k + 1)}
+      {open && <Detail key={open.id} onOpen={setOpen} a={open} userId={userId} onClose={() => setOpen(null)} onChanged={() => setRefreshKey(k => k + 1)}
         onLogin={() => { setOpen(null); setView('account'); }} />}
-    </>
+    </QuickCtx.Provider>
   );
 }

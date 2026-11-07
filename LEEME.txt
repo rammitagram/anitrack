@@ -1,4 +1,4 @@
-ANITRACK - version 0.5
+ANITRACK - version 0.6
 1) No hace falta ninguna migración nueva en Supabase (se usa la de la v0.3).
 2) Vercel > Settings > Environment Variables: cargar NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY (solo la clave anon/publishable, NUNCA service_role)
 3) Subir todo a GitHub; Vercel publica solo.
