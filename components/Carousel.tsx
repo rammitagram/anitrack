@@ -17,7 +17,7 @@ export default function Carousel({ title, items, loading, error, onOpen }: {
   return (
     <section className="rowSec">
       <h2>{title}</h2>
-      {error ? <p className="muted">{error}</p> : (
+      {error ? <p className="muted">{error}</p> : !loading && items.length === 0 ? <p className="muted">No se encontraron animes para esta sección.</p> : (
         <div className="row">
           {loading ? Array.from({ length: 8 }).map((_, i) => <div key={i} className="poster sk" />)
             : items.map(a => <Poster key={a.id} a={a} onOpen={onOpen} />)}

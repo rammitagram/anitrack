@@ -17,10 +17,12 @@ export default function Page() {
   const [view, setView] = useState<View>('home');
   const [open, setOpen] = useState<AnimeResult | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [ready, setReady] = useState(!supabase);
+  const [guest, setGuest] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true); });
     const { data } = supabase.auth.onAuthStateChange((ev, s) => {
       setSession(s);
       if (ev === 'SIGNED_IN') setView(v => (v === 'account' ? 'home' : v));
@@ -36,6 +38,16 @@ export default function Page() {
 
   const userId: string | null = session?.user?.id ?? null;
   const show = (v: View) => ({ display: view === v ? 'block' : 'none' });
+
+  if (!ready) return <div className="splash">ANI<b>TRACK</b></div>;
+  if (!session && !guest) return (
+    <div className="loginScreen"><div className="loginBox">
+      <div className="logo big">ANI<b>TRACK</b></div>
+      <p className="muted">Tu lista de anime, en un solo lugar.</p>
+      <AuthPanel email={null} username={null} />
+      <button className="link" onClick={() => setGuest(true)}>Explorar sin cuenta</button>
+    </div></div>
+  );
 
   return (
     <>

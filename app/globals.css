@@ -15,7 +15,7 @@ input,select{background:var(--surface);color:var(--text);border:1px solid var(--
 .hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,13,20,.95),rgba(11,13,20,.35)),linear-gradient(0deg,var(--bg),transparent 45%)}
 .heroIn{position:relative;padding:32px 28px 40px;max-width:640px}.heroIn h1{font-size:38px;line-height:1.1}.meta{color:var(--muted);font-size:14px;margin:8px 0}
 .desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#d5d8e3;line-height:1.5}
-.rowSec{padding:22px 28px 0}.row{display:flex;gap:14px;overflow-x:auto;padding:12px 0 6px;scroll-snap-type:x proximity}
+.rowSec{padding:22px 28px 0}.row{scrollbar-width:thin;scrollbar-color:#2a3042 transparent;display:flex;gap:14px;overflow-x:auto;padding:12px 0 6px;scroll-snap-type:x proximity}
 .poster{flex:none;width:156px;background:none;border:0;padding:0;text-align:left;scroll-snap-align:start;display:flex;flex-direction:column;gap:5px}
 .poster img,.poster .noimg,.poster.sk{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;background:var(--surface)}
 .poster.sk,.hero.sk{animation:pulse 1.4s infinite;min-height:0}.hero.sk{min-height:440px;background:var(--surface)}@keyframes pulse{50%{opacity:.5}}
@@ -39,3 +39,7 @@ input,select{background:var(--surface);color:var(--text);border:1px solid var(--
 .nav{position:fixed;bottom:0;left:0;right:0;z-index:30;justify-content:space-around;background:rgba(11,13,20,.97);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))}.nav button{flex:1;font-size:13px}.nav button.on{color:var(--accent)}
 .page{padding-bottom:80px}.hero,.hero.sk{min-height:380px}.heroIn{padding:20px 16px 28px}.heroIn h1{font-size:28px}.rowSec{padding:18px 16px 0}.exploreSection,.librarySection,.authPage{padding:18px 16px}
 .poster{width:128px}.mBody{flex-direction:column;padding:0 16px 20px}.mCover{width:110px;height:165px}.stats{grid-template-columns:repeat(2,1fr)}}
+.splash{min-height:100vh;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}.splash b{color:var(--accent)}
+.loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0,rgba(139,92,246,.18),transparent 60%),var(--bg)}
+.loginBox{width:100%;max-width:400px;text-align:center}.logo.big{font-size:36px;display:block;margin:0 auto 6px}.loginBox .authCard{text-align:left;margin:22px 0 14px}.switchMode{margin:14px 0 0;font-size:14px}
+.center{text-align:center;padding:18px 0}.sentinel{height:1px}.saved{margin:0 6px 0 0;align-self:center}

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export default function AuthPanel({ email: sessionEmail, username: name }: { email: string | null; username: string | null }) {
-  const [mode, setMode] = useState<'login' | 'signup'>('signup');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -41,11 +41,11 @@ export default function AuthPanel({ email: sessionEmail, username: name }: { ema
         {mode === 'signup' && <label>Nombre de usuario<input required minLength={3} maxLength={20} pattern="[A-Za-z0-9_]+" value={username} onChange={e => setUsername(e.target.value)} /></label>}
         <label>Correo<input required type="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Contraseña<input required minLength={6} type="password" value={password} onChange={e => setPassword(e.target.value)} /></label>
-        <button className="primaryBtn full" disabled={busy || !isSupabaseConfigured}>{mode === 'signup' ? 'Crear cuenta' : 'Entrar'}</button>
+        <button className="primaryBtn full" disabled={busy || !isSupabaseConfigured}>{mode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}</button>
         {!isSupabaseConfigured && <small className="muted">Falta conectar Supabase.</small>}
         <p className="switchMode">
           <button type="button" onClick={() => setMode(mode === 'signup' ? 'login' : 'signup')}>
-            {mode === 'signup' ? 'Ya tengo cuenta' : 'Crear una cuenta'}
+            {mode === 'signup' ? 'Ya tengo cuenta, iniciar sesión' : '¿No tenés cuenta? Crear una'}
           </button>
         </p>
       </form>

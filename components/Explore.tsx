@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimeResult } from '@/lib/types';
 import { Poster } from './Carousel';
 
@@ -9,23 +9,53 @@ export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }
   const [q, setQ] = useState('');
   const [genre, setGenre] = useState('');
   const [sort, setSort] = useState('POPULARITY_DESC');
-  const [res, setRes] = useState<AnimeResult[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<AnimeResult[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const gen = useRef(0);
+  const sentinel = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => {
-      const qs = new URLSearchParams({ sort });
+  const load = useCallback(async (p: number, reset: boolean) => {
+    const my = reset ? ++gen.current : gen.current;
+    setLoading(true); setErr('');
+    try {
+      const qs = new URLSearchParams({ sort, page: String(p) });
       if (q.trim()) qs.set('q', q.trim());
       if (genre) qs.set('genre', genre);
-      fetch(`/api/anime?${qs}`)
-        .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error); setRes(j.results); setErr(''); })
-        .catch(e => setErr(e.message || 'Error al buscar.'))
-        .finally(() => setLoading(false));
-    }, 400);
-    return () => clearTimeout(t);
+      const r = await fetch(`/api/anime?${qs}`);
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'No se pudo cargar.');
+      if (my !== gen.current) return;
+      setItems(prev => {
+        const base = reset ? [] : prev;
+        const seen = new Set(base.map(a => a.id));
+        return [...base, ...(j.results as AnimeResult[]).filter(a => !seen.has(a.id))];
+      });
+      setPage(p); setHasNext(!!j.hasNext);
+    } catch (e) {
+      if (my === gen.current) setErr(e instanceof Error ? e.message : 'No se pudo cargar.');
+    } finally {
+      if (my === gen.current) setLoading(false);
+    }
   }, [q, genre, sort]);
+
+  useEffect(() => {
+    gen.current++; setItems([]); setHasNext(true); setPage(1);
+    const t = setTimeout(() => load(1, true), 400);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(es => {
+      if (es[0].isIntersecting && hasNext && !loading && !err && items.length > 0) load(page + 1, false);
+    }, { rootMargin: '600px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasNext, loading, err, items.length, page, load]);
 
   return (
     <section className="exploreSection">
@@ -42,12 +72,14 @@ export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }
           <option value="START_DATE_DESC">Más recientes</option>
         </select>
       </div>
-      {err && <p className="message">{err}</p>}
-      {!loading && !err && res.length === 0 && <p className="empty">Sin resultados.</p>}
       <div className="grid">
-        {loading ? Array.from({ length: 10 }).map((_, i) => <div key={i} className="poster sk" />)
-          : res.map(a => <Poster key={a.id} a={a} onOpen={onOpen} />)}
+        {items.map(a => <Poster key={a.id} a={a} onOpen={onOpen} />)}
+        {loading && Array.from({ length: items.length ? 6 : 12 }).map((_, i) => <div key={`s${i}`} className="poster sk" />)}
       </div>
+      {err && <div className="center"><p className="message">{err}</p><button className="secondaryBtn" onClick={() => load(items.length ? page + 1 : 1, items.length === 0)}>Reintentar</button></div>}
+      {!loading && !err && items.length === 0 && <p className="empty">Sin resultados.</p>}
+      {!loading && !err && !hasNext && items.length > 0 && <p className="center muted">Llegaste al final.</p>}
+      <div ref={sentinel} className="sentinel" />
     </section>
   );
 }
