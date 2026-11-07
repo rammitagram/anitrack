@@ -1,5 +1,5 @@
 export type AnimeResult = {
-  id: number; title: string; nativeTitle: string; cover: string;
+  id: number; title: string; nativeTitle: string; cover: string; banner: string | null; description: string;
   episodes: number | null; year: number | null; score: number | null;
   format: string | null; status: string | null; duration: number | null; genres: string[];
 };

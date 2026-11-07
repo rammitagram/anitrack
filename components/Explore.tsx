@@ -1,66 +1,52 @@
 'use client';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { AnimeResult, ENTRY_COLUMNS } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { AnimeResult } from '@/lib/types';
+import { Poster } from './Carousel';
 
-export default function Explore({ userId, onAdded }: { userId: string | null; onAdded: () => void }) {
+const GENRES = [['Action', 'Acción'], ['Adventure', 'Aventura'], ['Comedy', 'Comedia'], ['Drama', 'Drama'], ['Fantasy', 'Fantasía'], ['Horror', 'Terror'], ['Mystery', 'Misterio'], ['Psychological', 'Psicológico'], ['Romance', 'Romance'], ['Sci-Fi', 'Ciencia ficción'], ['Slice of Life', 'Slice of life'], ['Sports', 'Deportes'], ['Supernatural', 'Sobrenatural']];
+
+export default function Explore({ onOpen }: { onOpen: (a: AnimeResult) => void }) {
   const [q, setQ] = useState('');
-  const [results, setResults] = useState<AnimeResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [message, setMessage] = useState('');
-  const [picking, setPicking] = useState<number | null>(null);
-  const [ep, setEp] = useState(0);
+  const [genre, setGenre] = useState('');
+  const [sort, setSort] = useState('POPULARITY_DESC');
+  const [res, setRes] = useState<AnimeResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
 
-  async function search(e: React.FormEvent) {
-    e.preventDefault();
-    if (q.trim().length < 2) return;
-    setSearching(true); setMessage('');
-    try {
-      const res = await fetch(`/api/anime?q=${encodeURIComponent(q.trim())}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'No se pudo buscar.');
-      setResults(data.results || []);
-      if (!data.results?.length) setMessage('Sin resultados.');
-    } catch (err) { setMessage(err instanceof Error ? err.message : 'Error al buscar.'); }
-    setSearching(false);
-  }
-
-  async function add(a: AnimeResult, status: string) {
-    if (!supabase || !userId) { setMessage('Iniciá sesión para agregar animes.'); return; }
-    const { error } = await supabase.from('anime_entries').insert({
-      user_id: userId, anilist_id: a.id, title: a.title, native_title: a.nativeTitle || null,
-      cover_url: a.cover || null, format: a.format, episodes_total: a.episodes,
-      duration_min: a.duration, genres: a.genres, status,
-      episodes_watched: status === 'Completado' ? (a.episodes ?? 0) : status === 'Viendo' ? Math.min(Math.max(0, ep), a.episodes ?? Infinity) : 0,
-    }).select(ENTRY_COLUMNS).single();
-    if (error) setMessage(error.code === '23505' ? 'Ya lo tenés en tu biblioteca.' : error.message);
-    else { setMessage(`${a.title} agregado.`); setPicking(null); setEp(0); onAdded(); }
-  }
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => {
+      const qs = new URLSearchParams({ sort });
+      if (q.trim()) qs.set('q', q.trim());
+      if (genre) qs.set('genre', genre);
+      fetch(`/api/anime?${qs}`)
+        .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error); setRes(j.results); setErr(''); })
+        .catch(e => setErr(e.message || 'Error al buscar.'))
+        .finally(() => setLoading(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [q, genre, sort]);
 
   return (
-    <section className="exploreSection" id="explorar">
-      <h2>Buscar anime</h2>
-      <form className="searchForm" onSubmit={search}>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Nombre del anime" />
-        <button className="primaryBtn" disabled={searching || q.trim().length < 2}>{searching ? 'Buscando…' : 'Buscar'}</button>
-      </form>
-      {message && <p className="message">{message}</p>}
-      <div className="animeGrid">
-        {results.map(a => (
-          <article className="animeCard" key={a.id}>
-            {a.cover ? <img src={a.cover} alt={a.title} /> : <div className="coverFallback">—</div>}
-            <div className="animeInfo">
-              <b>{a.title}</b>
-              <span>{[a.year, a.format, a.episodes ? `${a.episodes} eps.` : null].filter(Boolean).join(' · ')}</span>
-              {picking === a.id ? <div className="picker">
-                <button type="button" className="addSmall" onClick={() => add(a, 'Completado')}>Ya visto</button>
-                <button type="button" className="addSmall" onClick={() => add(a, 'Viendo')}>Viendo</button>
-                <input className="mini" type="number" min={0} max={a.episodes ?? undefined} value={ep} onChange={e => setEp(Number(e.target.value) || 0)} title="Episodio actual (solo para Viendo)" />
-                <button type="button" className="addSmall" onClick={() => add(a, 'Pendiente')}>Quiero ver</button>
-              </div> : <button type="button" className="addSmall" onClick={() => { setPicking(a.id); setEp(0); }}>Agregar</button>}
-            </div>
-          </article>
-        ))}
+    <section className="exploreSection">
+      <h1>Explorar</h1>
+      <div className="controls">
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por nombre" />
+        <select value={genre} onChange={e => setGenre(e.target.value)}>
+          <option value="">Todos los géneros</option>
+          {GENRES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <select value={sort} onChange={e => setSort(e.target.value)}>
+          <option value="POPULARITY_DESC">Popularidad</option>
+          <option value="SCORE_DESC">Puntuación</option>
+          <option value="START_DATE_DESC">Más recientes</option>
+        </select>
+      </div>
+      {err && <p className="message">{err}</p>}
+      {!loading && !err && res.length === 0 && <p className="empty">Sin resultados.</p>}
+      <div className="grid">
+        {loading ? Array.from({ length: 10 }).map((_, i) => <div key={i} className="poster sk" />)
+          : res.map(a => <Poster key={a.id} a={a} onOpen={onOpen} />)}
       </div>
     </section>
   );
