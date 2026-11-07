@@ -1,0 +1,4 @@
+ANITRACK - version 0.2
+1) Supabase > SQL Editor: pegar y ejecutar supabase/schema.sql
+2) Vercel > Settings > Environment Variables: cargar NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY (solo la clave anon/publishable, NUNCA service_role)
+3) Subir todo a GitHub; Vercel publica solo.
